@@ -1,20 +1,28 @@
 ﻿using System.IO;
-using MomBspTools.Lib.BSP.Enum;
 
-namespace MomBspTools.Lib.BSP.Lumps
+namespace Lumper.Lib.BSP.Lumps
 {
+    public abstract class Lump<T> : Lump
+    {
+        public T Type { get; set; }
+        protected Lump(BspFile parent) : base(parent)
+        { }
+    }
+
     public abstract class Lump
     {
-        public LumpType Type { get; set; }
-        public int Offset { get; set; }
-        public int Length { get; set; }
-        public int Version { get; set; }
-        public int FourCc { get; set; }
+        public bool Compress { get; set; }
         public BspFile Parent { get; set; }
+        public int Version { get; set; }
+        public int Flags { get; set; }
 
         protected Lump(BspFile parent)
         {
             Parent = parent;
         }
+
+        public abstract void Read(Stream stream, long length);
+        public abstract void Write(Stream stream);
+        public abstract bool Empty();
     }
 }
