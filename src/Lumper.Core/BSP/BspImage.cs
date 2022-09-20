@@ -1,11 +1,12 @@
-﻿using Lumper.Core.BSP.Lumps;
+﻿using Lumper.Core.BSP.Enums;
+using Lumper.Core.BSP.Lumps;
 using Lumper.Core.Collections;
 
 namespace Lumper.Core.BSP;
 
 public partial class BspImage
 {
-    private readonly OwnedCollection<BspImage, BspLump> _lumps;
+    private readonly OwnedDictionary<BspImage, BspLumpType, IBspLump> _lumps;
 
     private BspImage(BinaryReader reader)
     {
@@ -18,7 +19,7 @@ public partial class BspImage
         _lumps = new(this);
     }
 
-    public OwnedCollection<BspImage,BspLump> Lumps => _lumps;
+    public OwnedDictionary<BspImage, BspLumpType, IBspLump> Lumps => _lumps;
     public int Revision { get; set; } = 0;
     public int Version { get; set; } = 0;
 
