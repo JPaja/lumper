@@ -1,14 +1,9 @@
 ﻿using Lumper.Core.Collections;
-using System.Runtime.Versioning;
 
 namespace Lumper.Core.BSP.Lumps;
 
-
-public interface IBspLump : IOwnedElement<BspImage>
+public partial interface IBspLump<T> : IOwnedElement<BspImage> where T: IBspLump<T>
 {
-    /*
-    //TODO: Enable .net 7 static abstract interfaces
-    [RequiresPreviewFeatures]
-    static abstract IBspLump Read(BinaryReader reader, int lenght);
-    */
+    static abstract IBspLump ReadInternal(BinaryReader reader, int lenght);
+    static abstract int Index { get; }
 }

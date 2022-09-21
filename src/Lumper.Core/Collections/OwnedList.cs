@@ -13,7 +13,7 @@ namespace Lumper.Core.Collections;
 /// <typeparam name="TOwner">The type of the owner object.</typeparam>
 /// <typeparam name="TItem">The type of elements to store.</typeparam>
 [DebuggerDisplay("Count = {" + nameof(Count) + "}")]
-public class OwnedCollection<TOwner, TItem> : IList<TItem>
+public class OwnedList<TOwner, TItem> : IList<TItem>
     where TItem : class, IOwnedElement<TOwner>
     where TOwner : class
 {
@@ -23,7 +23,7 @@ public class OwnedCollection<TOwner, TItem> : IList<TItem>
     /// Creates a new empty collection that is owned by an object.
     /// </summary>
     /// <param name="owner">The owner of the collection.</param>
-    public OwnedCollection(TOwner owner)
+    public OwnedList(TOwner owner)
     {
         Owner = owner ?? throw new ArgumentNullException(nameof(owner));
     }

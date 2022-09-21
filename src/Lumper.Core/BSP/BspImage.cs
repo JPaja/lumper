@@ -6,20 +6,19 @@ namespace Lumper.Core.BSP;
 
 public partial class BspImage
 {
-    private readonly OwnedDictionary<BspImage, BspLumpType, IBspLump> _lumps;
+    private const int HeaderLumps = 64;
+
+    private readonly IBspLump?[] _lumps = new IBspLump?[HeaderLumps];
 
     private BspImage(BinaryReader reader)
     {
-        _lumps = new(this);
         Read(reader);
     }
 
     public BspImage()
     {
-        _lumps = new(this);
     }
 
-    public OwnedDictionary<BspImage, BspLumpType, IBspLump> Lumps => _lumps;
     public int Revision { get; set; } = 0;
     public int Version { get; set; } = 0;
 
