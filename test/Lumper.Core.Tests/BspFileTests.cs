@@ -14,4 +14,13 @@ public class BspFileTests
 
         Assert.NotNull(bsp);
     }
+
+    [Fact]
+    public void Parse_Bhop_Arcane_v2()
+    {
+        var data = Properties.Resources.bhop_arcane_v2;
+        var bsp = BspImage.FromStream(new MemoryStream(data));
+
+        Assert.NotNull(bsp);
+    }
 }
