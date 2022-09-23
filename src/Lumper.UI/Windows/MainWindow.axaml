@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Lumper.UI.ViewModels"
+        xmlns:v="using:Lumper.UI.Views"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:c="using:Lumper.UI.Converters"
@@ -16,6 +17,9 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-
+  <Grid ColumnDefinitions="*,1,4*">
+      <v:BmpBrowserView Grid.Column="0" DataContext="{Binding BspBrowser}" Margin="0,0,2,0"/>
+      <GridSplitter Grid.Column="1" ResizeDirection="Columns"/>
+      <TabControl Grid.Column="2"></TabControl>
+  </Grid>
 </Window>
