@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using DynamicData;
 using Lumper.Lib.BSP.Struct;
 
@@ -17,9 +18,9 @@ public class EntityViewModel : BspNodeBase
     }
 
     public SourceList<EntityPropertyBase> Properties { get; } = new();
-
-    public override bool CanView => true;
+    public override BspNodeBase? ViewNode => this;
     public override string NodeName => $"Entity{(string.IsNullOrWhiteSpace(_className) ? "" : $" ({_className})")}";
+    public override bool IsModified => Nodes is { Count: > 0 } && Nodes.Any(n => n.IsModified);
 
     private void AddProperty(Lib.BSP.Struct.Entity.Property property)
     {

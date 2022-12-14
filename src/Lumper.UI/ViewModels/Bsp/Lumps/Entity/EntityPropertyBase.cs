@@ -10,5 +10,4 @@ public abstract class EntityPropertyBase : BspNodeBase
     public string Key { get; }
 
     public override string NodeName => Key;
-    public override bool CanView => true;
 }

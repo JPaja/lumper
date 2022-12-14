@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Reactive.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DynamicData;
@@ -31,13 +33,19 @@ public abstract class BspNodeBase : ViewModelBase
         Main = parent.Main;
     }
 
+
+    public bool IsModifiedRecursive => IsModified
+                                       || (_nodes is { Count: > 0 } && _nodes.Any(n => n.IsModifiedRecursive));
+
+    public virtual bool IsModified => false;
+
     public bool IsVisible
     {
         get => _isVisible;
         set => this.RaiseAndSetIfChanged(ref _isVisible, value);
     }
 
-    public virtual bool CanView => false;
+    public virtual BspNodeBase? ViewNode => null;
 
     public bool IsLeaf => _nodes is not { Count: > 0 };
 
@@ -56,6 +64,16 @@ public abstract class BspNodeBase : ViewModelBase
 
     public abstract string NodeName { get; }
     public virtual string NodeIcon => "/Assets/momentum-logo.png";
+
+    public virtual void Update()
+    {
+        if (_nodes is { Count: > 0 })
+            foreach (var node in _nodes)
+                node.Update();
+
+        this.RaisePropertyChanged(nameof(IsModified));
+        this.RaisePropertyChanged(nameof(IsModifiedRecursive));
+    }
 
     protected virtual async ValueTask<bool> Match(Matcher matcher, CancellationToken? cancellationToken)
     {
@@ -113,5 +131,26 @@ public abstract class BspNodeBase : ViewModelBase
             .Bind(out _filteredNodes)
             .DisposeMany()
             .Subscribe(_ => { }, RxApp.DefaultExceptionHandler.OnNext);
+
+        list.Connect()
+            .AutoRefreshOnObservable(x => x.WhenValueChanged(y => y.IsModified))
+            .Subscribe(x => { this.RaisePropertyChanged(nameof(IsModifiedRecursive)); });
+
+        list.Connect()
+            .AutoRefreshOnObservable(x => x.WhenValueChanged(y => y.IsModifiedRecursive))
+            .Subscribe(x => { this.RaisePropertyChanged(nameof(IsModifiedRecursive)); });
+    }
+
+    public TRet Modify<TRet>(
+        ref TRet backingField,
+        TRet newValue,
+        [CallerMemberName] string? propertyName = null)
+    {
+        var result = this.RaiseAndSetIfChanged(ref backingField, newValue, propertyName);
+        this.RaisePropertyChanged(nameof(IsModified));
+        this.RaisePropertyChanged(nameof(IsModifiedRecursive));
+        if (ViewNode is not null && ViewNode != this) ViewNode.RaisePropertyChanged(nameof(IsModified));
+
+        return result;
     }
 }

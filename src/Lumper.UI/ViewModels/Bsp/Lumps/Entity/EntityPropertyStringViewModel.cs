@@ -1,7 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Lumper.UI.Models;
-using ReactiveUI;
 
 namespace Lumper.UI.ViewModels.Bsp.Lumps.Entity;
 
@@ -17,16 +16,20 @@ public class EntityPropertyStringViewModel : EntityPropertyBase
         _value = property.Value;
     }
 
+    public override BspNodeBase? ViewNode => Parent;
+    public override bool IsModified => base.IsModified || _property.Value != _value;
+
     public string Value
     {
         get => _value;
-        set
-        {
-            this.RaiseAndSetIfChanged(ref _value, value);
-            _property.Value = value;
-        }
+        set => Modify(ref _value, value);
     }
 
+    public override void Update()
+    {
+        _property.Value = _value;
+        base.Update();
+    }
 
     protected override async ValueTask<bool> Match(Matcher matcher, CancellationToken? cancellationToken)
     {
