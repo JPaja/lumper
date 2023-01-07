@@ -6,6 +6,7 @@ using ReactiveUI;
 
 namespace Lumper.UI.ViewModels;
 
+// MainWindowViewModel support for searching <see cref="Lumper.Lib.BSP.BspFile"/>
 public partial class MainWindowViewModel
 {
     private string _searchPattern = "";
@@ -25,15 +26,17 @@ public partial class MainWindowViewModel
 
     private void SearchInit()
     {
-        this.WhenAnyValue(x => x.SearchPattern, x => x.SelectedMatcher, x => x.BspModel)
+        this.WhenAnyValue(x => x.SearchPattern, x => x.SelectedMatcher,
+                x => x.BspModel)
             .Throttle(TimeSpan.FromMilliseconds(400))
             .ObserveOn(RxApp.MainThreadScheduler)
             .Subscribe(Search);
     }
 
-    private async void Search((string?, MatcherBase?, BspViewModel?) args)
+    private static async void Search(
+        (string?, MatcherBase?, BspViewModel?) args)
     {
-        var (pattern, matcherBase, model) = args;
+        (string? pattern, var matcherBase, var model) = args;
         if (matcherBase is null || pattern is null || model is null)
             return;
         //TODO: Add lock when search is slower than throttle rate

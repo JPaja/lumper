@@ -12,6 +12,9 @@ using ReactiveUI;
 
 namespace Lumper.UI.ViewModels.Bsp;
 
+/// <summary>
+///     ViewModel base for <see cref="Lumper.Lib.BSP.Lumps.Lump" /> TreeNode representation
+/// </summary>
 public abstract class BspNodeBase : ViewModelBase
 {
     private ReadOnlyObservableCollection<BspNodeBase>? _filteredNodes;
@@ -33,9 +36,9 @@ public abstract class BspNodeBase : ViewModelBase
         Main = parent.Main;
     }
 
-
     public bool IsModifiedRecursive => IsModified
-                                       || (_nodes is { Count: > 0 } && _nodes.Any(n => n.IsModifiedRecursive));
+                                       || _nodes is not null && _nodes.Any(n =>
+                                           n.IsModifiedRecursive);
 
     public virtual bool IsModified => false;
 
@@ -49,12 +52,20 @@ public abstract class BspNodeBase : ViewModelBase
 
     public bool IsLeaf => _nodes is not { Count: > 0 };
 
-    public BspNodeBase? Parent { get; }
+    public BspNodeBase? Parent
+    {
+        get;
+    }
 
-    public MainWindowViewModel Main { get; }
+    public MainWindowViewModel Main
+    {
+        get;
+    }
 
     public ReadOnlyObservableCollection<BspNodeBase>? Nodes => _nodes;
-    public ReadOnlyObservableCollection<BspNodeBase>? FilteredNodes => _filteredNodes;
+
+    public ReadOnlyObservableCollection<BspNodeBase>? FilteredNodes =>
+        _filteredNodes;
 
     public BspNodeBase? SelectedNode
     {
@@ -62,7 +73,11 @@ public abstract class BspNodeBase : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _selectedNode, value);
     }
 
-    public abstract string NodeName { get; }
+    public abstract string NodeName
+    {
+        get;
+    }
+
     public virtual string NodeIcon => "/Assets/momentum-logo.png";
 
     public virtual void Update()
@@ -75,7 +90,8 @@ public abstract class BspNodeBase : ViewModelBase
         this.RaisePropertyChanged(nameof(IsModifiedRecursive));
     }
 
-    protected virtual async ValueTask<bool> Match(Matcher matcher, CancellationToken? cancellationToken)
+    protected virtual async ValueTask<bool> Match(Matcher matcher,
+        CancellationToken? cancellationToken)
     {
         return await matcher.Match(NodeName);
     }
@@ -93,9 +109,10 @@ public abstract class BspNodeBase : ViewModelBase
                 await node.Reset();
     }
 
-    public async ValueTask<bool> Filter(Matcher matcher, CancellationToken? cancellationToken = null)
+    public async ValueTask<bool> Filter(Matcher matcher,
+        CancellationToken? cancellationToken = null)
     {
-        var anyChildVisible = false;
+        bool anyChildVisible = false;
         if (_nodes is not null)
         {
             //TODO: Add visibility cache for restoration of changed state
@@ -107,12 +124,14 @@ public abstract class BspNodeBase : ViewModelBase
 
         if (cancellationToken is { IsCancellationRequested: true })
             return _isVisible;
-        var visible = anyChildVisible || await Match(matcher, cancellationToken);
+        bool visible =
+            anyChildVisible || await Match(matcher, cancellationToken);
         IsVisible = visible;
         return visible;
     }
 
-    protected void InitializeNodeChildrenObserver<T>(ISourceList<T> list) where T : BspNodeBase
+    protected void InitializeNodeChildrenObserver<T>(ISourceList<T> list)
+        where T : BspNodeBase
     {
         if (_nodes is not null || _filteredNodes is not null)
             throw new Exception("Nodes cannot be bound to multiple lists");
@@ -137,7 +156,8 @@ public abstract class BspNodeBase : ViewModelBase
             .Subscribe(x => { this.RaisePropertyChanged(nameof(IsModifiedRecursive)); });
 
         list.Connect()
-            .AutoRefreshOnObservable(x => x.WhenValueChanged(y => y.IsModifiedRecursive))
+            .AutoRefreshOnObservable(x =>
+                x.WhenValueChanged(y => y.IsModifiedRecursive))
             .Subscribe(x => { this.RaisePropertyChanged(nameof(IsModifiedRecursive)); });
     }
 
@@ -146,10 +166,12 @@ public abstract class BspNodeBase : ViewModelBase
         TRet newValue,
         [CallerMemberName] string? propertyName = null)
     {
-        var result = this.RaiseAndSetIfChanged(ref backingField, newValue, propertyName);
+        var result =
+            this.RaiseAndSetIfChanged(ref backingField, newValue, propertyName);
         this.RaisePropertyChanged(nameof(IsModified));
         this.RaisePropertyChanged(nameof(IsModifiedRecursive));
-        if (ViewNode is not null && ViewNode != this) ViewNode.RaisePropertyChanged(nameof(IsModified));
+        if (ViewNode is not null && ViewNode != this)
+            ViewNode.RaisePropertyChanged(nameof(IsModified));
 
         return result;
     }

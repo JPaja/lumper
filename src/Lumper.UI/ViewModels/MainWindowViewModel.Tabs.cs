@@ -8,11 +8,15 @@ using ReactiveUI;
 
 namespace Lumper.UI.ViewModels;
 
+// MainWindowViewModel support for Tabs
 public partial class MainWindowViewModel
 {
     private readonly SourceList<BspNodeBase> _openTabs = new();
     private readonly HashSet<BspNodeBase> _openTabsSet = new();
-    private /*readonly*/ ReadOnlyObservableCollection<BspNodeBase> _openTabsReadOnly;
+
+    private /*readonly*/
+        ReadOnlyObservableCollection<BspNodeBase> _openTabsReadOnly = null!;
+
     private BspNodeBase? _selectedTab;
 
     public BspNodeBase? SelectedTab
@@ -21,7 +25,8 @@ public partial class MainWindowViewModel
         set => this.RaiseAndSetIfChanged(ref _selectedTab, value);
     }
 
-    public ReadOnlyObservableCollection<BspNodeBase> OpenTabs => _openTabsReadOnly;
+    public ReadOnlyObservableCollection<BspNodeBase> OpenTabs =>
+        _openTabsReadOnly;
 
     private void TabsInit()
     {

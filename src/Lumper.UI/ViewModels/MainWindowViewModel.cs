@@ -1,23 +1,26 @@
 ﻿using System;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Lumper.Lib.BSP;
 using Lumper.UI.ViewModels.Bsp;
 using ReactiveUI;
 
 namespace Lumper.UI.ViewModels;
 
+/// <summary>
+///     ViewModel for MainWindow
+/// </summary>
 public partial class MainWindowViewModel : ViewModelBase
 {
     private BspViewModel? _bspModel;
-    private BspFile? _file;
     private BspNodeBase? _selectedNode;
 
     public MainWindowViewModel()
     {
-        if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime
+        if (Application.Current?.ApplicationLifetime is not
+            IClassicDesktopStyleApplicationLifetime
             desktop)
-            throw new InvalidCastException(nameof(Application.Current.ApplicationLifetime));
+            throw new InvalidCastException(
+                nameof(Application.Current.ApplicationLifetime));
 
         Desktop = desktop;
 
@@ -26,7 +29,10 @@ public partial class MainWindowViewModel : ViewModelBase
         IOInit();
     }
 
-    public IClassicDesktopStyleApplicationLifetime Desktop { get; }
+    public IClassicDesktopStyleApplicationLifetime Desktop
+    {
+        get;
+    }
 
     public BspViewModel? BspModel
     {

@@ -6,6 +6,9 @@ using Lumper.UI.Models;
 
 namespace Lumper.UI.ViewModels.Bsp.Lumps.Entity;
 
+/// <summary>
+///     ViewModel for <see cref="EntityIO" /> <see cref="Lib.BSP.Struct.Entity.Property" />.
+/// </summary>
 public class EntityPropertyIOViewModel : EntityPropertyBase
 {
     private readonly EntityIO _entity;
@@ -15,8 +18,10 @@ public class EntityPropertyIOViewModel : EntityPropertyBase
     private string _targetEntityName;
     private int _timeToFire;
 
-    public EntityPropertyIOViewModel(EntityViewModel parent, Lib.BSP.Struct.Entity.Property<EntityIO> property) : base(
-        parent, property)
+    public EntityPropertyIOViewModel(EntityViewModel parent,
+        Lib.BSP.Struct.Entity.Property<EntityIO> property)
+        : base(
+            parent, property)
     {
         _entity = property.Value;
         _targetEntityName = _entity.TargetEntityName;
@@ -29,7 +34,8 @@ public class EntityPropertyIOViewModel : EntityPropertyBase
     public override BspNodeBase? ViewNode => Parent;
 
     public override bool IsModified => base.IsModified
-                                       || _entity.TargetEntityName != _targetEntityName
+                                       || _entity.TargetEntityName
+                                       != _targetEntityName
                                        || _entity.Input != _input
                                        || _entity.Parameter != _parameter
                                        // ReSharper disable once CompareOfFloatsByEqualityOperator
@@ -76,14 +82,15 @@ public class EntityPropertyIOViewModel : EntityPropertyBase
         base.Update();
     }
 
-    protected override async ValueTask<bool> Match(Matcher matcher, CancellationToken? cancellationToken)
+    protected override async ValueTask<bool> Match(Matcher matcher,
+        CancellationToken? cancellationToken)
     {
-        var match = false;
-        match |= await matcher.Match(_targetEntityName);
-        match |= await matcher.Match(_input);
-        match |= await matcher.Match(_parameter);
-        match |= await matcher.Match(_delay.ToString(CultureInfo.InvariantCulture));
-        match |= await matcher.Match(_timeToFire.ToString());
-        return match || await base.Match(matcher, cancellationToken);
+        return await matcher.Match(_targetEntityName)
+               || await matcher.Match(_input)
+               || await matcher.Match(_parameter)
+               || await matcher.Match(
+                   _delay.ToString(CultureInfo.InvariantCulture))
+               || await matcher.Match(_timeToFire.ToString())
+               || await base.Match(matcher, cancellationToken);
     }
 }

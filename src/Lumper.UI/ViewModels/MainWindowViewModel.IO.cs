@@ -1,12 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
-using System.IO;
-using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using Lumper.Lib.BSP;
+using Lumper.Lib.BSP.IO;
 using Lumper.UI.ViewModels.Bsp;
 using MessageBox.Avalonia;
 using MessageBox.Avalonia.Enums;
@@ -14,6 +14,7 @@ using ReactiveUI;
 
 namespace Lumper.UI.ViewModels;
 
+// MainWindowViewModel support for reading and writing of <see cref="BspFile"/>.
 public partial class MainWindowViewModel
 {
     private void IOInit()
@@ -21,45 +22,44 @@ public partial class MainWindowViewModel
         this.WhenAnyValue(x => x.BspModel)
             .ObserveOn(RxApp.MainThreadScheduler)
             .Where(m => m is not null)
-            .Subscribe(x => BspModel!.RaisePropertyChanged(nameof(BspModel.FilePath)));
+            .Subscribe(x =>
+                BspModel!.RaisePropertyChanged(nameof(BspModel.FilePath)));
 
         RxApp.MainThreadScheduler.Schedule(OnLoad);
     }
 
-    private static OpenFileDialog ConstructOpenBspDialog()
+    private static IReadOnlyList<FilePickerFileType> GenerateBspFileFilter()
     {
-        var dialog = new OpenFileDialog();
-        var bspFilter = new FileDialogFilter { Name = "Bsp file" };
-        bspFilter.Extensions.Add("bsp");
-        var anyFilter = new FileDialogFilter { Name = "All files" };
-        anyFilter.Extensions.Add("*");
-        dialog.Filters!.Add(bspFilter);
-        dialog.Filters!.Add(anyFilter);
-        dialog.AllowMultiple = false;
-        dialog.Title = "Pick bsp file";
-        return dialog;
-    }
+        var bspFilter = new FilePickerFileType("BSP files");
+        bspFilter.Patterns = new[] { "*.bsp" };
+        //MIME references from:
+        //https://www.wikidata.org/wiki/Q105858735
+        //https://www.wikidata.org/wiki/Q105859836
+        //https://www.wikidata.org/wiki/Q2701652
+        bspFilter.MimeTypes = new[]
+        {
+            "application/octet-stream", "model/vnd.valve.source.compiled-map"
+        };
 
-    private static SaveFileDialog ConstructSaveBspDialog()
-    {
-        var dialog = new SaveFileDialog();
-        var bspFilter = new FileDialogFilter { Name = "Bsp file" };
-        bspFilter.Extensions.Add("bsp");
-        dialog.Filters!.Add(bspFilter);
-        dialog.Title = "Pick bsp file";
-        return dialog;
+        var anyFilter = new FilePickerFileType("All files");
+        anyFilter.Patterns = new[] { "*" };
+
+        return new[] { bspFilter, anyFilter };
     }
 
     public async ValueTask OpenCommand()
     {
         if (Desktop.MainWindow is null)
             return;
-        var dialog = ConstructOpenBspDialog();
-        var result = await dialog.ShowAsync(Desktop.MainWindow);
-        if (result is not { Length: 1 })
+
+        var dialog = new FilePickerOpenOptions();
+        dialog.AllowMultiple = false;
+        dialog.Title = "Pick BSP file";
+        dialog.FileTypeFilter = GenerateBspFileFilter();
+        var result = await Desktop.MainWindow.StorageProvider.OpenFilePickerAsync(dialog);
+        if (result is not { Count: 1 })
             return;
-        var path = result.First();
-        await LoadBsp(path);
+        await LoadBsp(result[0]);
     }
 
     public async ValueTask SaveCommand()
@@ -67,19 +67,21 @@ public partial class MainWindowViewModel
         if (_bspModel is null)
             return;
 
-        if (_bspModel.FilePath is null)
+        if (_bspModel.File is null)
         {
             if (Desktop.MainWindow is null)
                 return;
-            var dialog = ConstructSaveBspDialog();
-            var result = await dialog.ShowAsync(Desktop.MainWindow);
+            var dialog = new FilePickerSaveOptions();
+            dialog.Title = "Pick BSP file";
+            dialog.FileTypeChoices = GenerateBspFileFilter();
+            var result = await Desktop.MainWindow.StorageProvider.SaveFilePickerAsync(dialog);
             if (result is null)
                 return;
             Save(result);
         }
         else
         {
-            Save(_bspModel.FilePath);
+            Save(_bspModel.File);
         }
     }
 
@@ -87,23 +89,27 @@ public partial class MainWindowViewModel
     {
         if (Desktop.MainWindow is null || _bspModel is null)
             return;
-        var dialog = ConstructSaveBspDialog();
-        var result = await dialog.ShowAsync(Desktop.MainWindow);
+        var dialog = new FilePickerSaveOptions();
+        dialog.Title = "Pick BSP file";
+        dialog.FileTypeChoices = GenerateBspFileFilter();
+        var result = await Desktop.MainWindow.StorageProvider.SaveFilePickerAsync(dialog);
         if (result is null)
             return;
         Save(result);
     }
 
-    private async void Save(string path)
+    private async void Save(IStorageFile file)
     {
-        if (_bspModel is null)
+        if (_bspModel is null || !file.CanOpenWrite)
             return;
 
         try
         {
             //TODO: Copy bsp model tree for fallback if error occurs
             _bspModel.Update();
-            _bspModel.BspFile.Save(path);
+            await using var writer =
+                new BspFileWriter(_bspModel.BspFile, await file.OpenWriteAsync());
+            writer.Save();
         }
         catch (Exception e)
         {
@@ -112,19 +118,25 @@ public partial class MainWindowViewModel
             return;
         }
 
-        _bspModel.FilePath = path;
+        _bspModel.File = file;
     }
 
-    private async ValueTask LoadBsp(string path)
+    private ValueTask LoadBsp(string path)
     {
-        if (!File.Exists(path))
-            return;
-        var file = new BspFile();
-        file.Load(path);
-        _file = file;
-        BspModel = new BspViewModel(this, file);
+        //TODO: Figure out how to load IStoragePath from file path
+        throw new NotImplementedException();
     }
 
+    private async ValueTask LoadBsp(IStorageFile file)
+    {
+        if (!file.CanOpenRead)
+            return;
+        var bspFile = new BspFile();
+        using var reader =
+            new BspFileReader(bspFile, await file.OpenReadAsync());
+        reader.Load();
+        BspModel = new BspViewModel(this, bspFile);
+    }
 
     public async Task CloseCommand()
     {
@@ -140,7 +152,7 @@ public partial class MainWindowViewModel
         BspModel = null;
     }
 
-    public async Task ExitCommand()
+    public void ExitCommand()
     {
         Desktop.MainWindow?.Close();
     }
@@ -150,13 +162,15 @@ public partial class MainWindowViewModel
         e.Cancel = true;
         if (_bspModel is not null && _bspModel.IsModifiedRecursive)
         {
-            var messageBox = MessageBoxManager
-                .GetMessageBoxStandardWindow("You have unsaved changes",
-                    "Do you want to close application without saving?", ButtonEnum.OkCancel);
+            var messageBox = MessageBoxManager.GetMessageBoxStandardWindow(
+                "You have unsaved changes", "Do you want to close application without saving?",
+                ButtonEnum.OkCancel);
             var result = await messageBox.ShowDialog(Desktop.MainWindow);
             if (result != ButtonResult.Ok)
                 return;
         }
+
+        _bspModel?.Dispose();
 
         //Since we have to cancel closing event on start due to not being able to await on Event
         //and message box cannot work in synchronous mode due to main window thread being frozen,
