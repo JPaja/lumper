@@ -21,7 +21,7 @@ namespace Lumper.UI.ViewModels.Bsp;
 public class BspViewModel : BspNodeBase, IDisposable
 {
     private readonly SourceList<LumpBase> _lumps = new();
-    private IStorageFile? _file;
+    private string? _filePath;
 
     public BspViewModel(MainWindowViewModel main, BspFile bspFile)
         : base(main)
@@ -43,25 +43,15 @@ public class BspViewModel : BspNodeBase, IDisposable
         get;
     }
 
-    public IStorageFile? File
+    public string? FilePath
     {
-        get => _file;
-        set
-        {
-            //Remove old file lock
-            _file?.Dispose();
-            this.RaiseAndSetIfChanged(ref _file, value);
-            this.RaisePropertyChanged(nameof(FilePath));
-        }
+        get => _filePath;
+        set => this.RaiseAndSetIfChanged(ref _filePath, value);
     }
-
-    [NotNullIfNotNull(nameof(File))]
-    public string? FilePath => _file?.Name;
 
     public void Dispose()
     {
         _lumps.Dispose();
-        _file?.Dispose();
     }
 
     private void ParseLump(BspLumpType type, Lump<BspLumpType> lump)

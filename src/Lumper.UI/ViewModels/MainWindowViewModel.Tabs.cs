@@ -50,11 +50,11 @@ public partial class MainWindowViewModel
             .Subscribe(_ => { }, RxApp.DefaultExceptionHandler.OnNext);
     }
 
-    private async void OnLoad()
+    private void OnLoad()
     {
         if (Desktop.Args is not { Length: 1 })
             return;
-        await LoadBsp(Desktop.Args[0]);
+        LoadBsp(Desktop.Args[0]);
     }
 
     public void Open(BspNodeBase? bspNode)

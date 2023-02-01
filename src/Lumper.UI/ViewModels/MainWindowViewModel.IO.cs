@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
@@ -67,7 +68,7 @@ public partial class MainWindowViewModel
         if (_bspModel is null)
             return;
 
-        if (_bspModel.File is null)
+        if (_bspModel.FilePath is null)
         {
             if (Desktop.MainWindow is null)
                 return;
@@ -81,7 +82,7 @@ public partial class MainWindowViewModel
         }
         else
         {
-            Save(_bspModel.File);
+            Save(_bspModel.FilePath);
         }
     }
 
@@ -118,24 +119,53 @@ public partial class MainWindowViewModel
             return;
         }
 
-        _bspModel.File = file;
+        _bspModel.FilePath = file.Name;
     }
 
-    private ValueTask LoadBsp(string path)
+    private async void Save(string path)
     {
-        //TODO: Figure out how to load IStoragePath from file path
-        throw new NotImplementedException();
+        if (_bspModel is null)
+            return;
+
+        try
+        {
+            using (var stream = File.OpenWrite(path))
+            {
+                //TODO: Copy bsp model tree for fallback if error occurs
+                _bspModel.Update();
+                await using var writer =
+                    new BspFileWriter(_bspModel.BspFile, stream);
+                writer.Save();
+            }
+        }
+        catch (Exception e)
+        {
+            MessageBoxManager.GetMessageBoxStandardWindow("Error",
+                $"Error while saving file \n{e.Message}");
+            return;
+        }
+
+        _bspModel.FilePath = path;
     }
 
-    private async ValueTask LoadBsp(IStorageFile file)
+    private void LoadBsp(string path)
+    {
+        var bspFile = new BspFile(path);
+        BspModel = new BspViewModel(this, bspFile);
+    }
+
+    private async Task LoadBsp(IStorageFile file)
     {
         if (!file.CanOpenRead)
             return;
-        var bspFile = new BspFile();
-        using var reader =
-            new BspFileReader(bspFile, await file.OpenReadAsync());
-        reader.Load();
-        BspModel = new BspViewModel(this, bspFile);
+        Console.WriteLine(file.Name);
+        var folder = await file.GetParentAsync();
+        if(!file.TryGetUri(out var path))
+        {
+           throw new Exception("Failed to get file path");
+            
+        }
+        LoadBsp(path.AbsolutePath);
     }
 
     public async Task CloseCommand()
